@@ -3,22 +3,30 @@ const line = require("@line/bot-sdk");
 
 const config = {
   channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
-channelSecret: process.env.CHANNEL_SECRET
+  channelSecret: process.env.CHANNEL_SECRET
 };
 
 const app = express();
 
 const client = new line.Client(config);
 
-app.post("/webhook", line.middleware(config), async (req, res) => {
+app.post("/webhook", line.middleware(config), (req, res) => {
   Promise
     .all(req.body.events.map(handleEvent))
-    .then((result) => res.json(result));
+    .then((result) => res.json(result))
+    .catch((err) => {
+      console.error(err);
+      res.status(500).end();
+    });
 });
 
-async function handleEvent(event) {
-  if (event.type !== "message" || event.message.type !== "text") {
-    return null;
+function handleEvent(event) {
+  if (event.type !== "message") {
+    return Promise.resolve(null);
+  }
+
+  if (event.message.type !== "text") {
+    return Promise.resolve(null);
   }
 
   return client.replyMessage(event.replyToken, {
